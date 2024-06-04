@@ -3,6 +3,7 @@ from pdf2image import convert_from_path, convert_from_bytes
 from pdf2image.exceptions import ( PDFInfoNotInstalledError, PDFPageCountError, PDFSyntaxError)
 import cv2
 import pytesseract
+import mahotas
 from PIL import Image
 
 pytesseract.pytesseract.tesseract_cmd = r'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
@@ -56,26 +57,29 @@ class Leitor_ocr(ILeitor_ocr):
 
     def ler_imagem_e_identificar_texto_e_pontos_de_interesse(self):
         caminho_da_imagem = 'imagem0.png'
-        imagem = cv2.imread(caminho_da_imagem)
-        
-        cv2.imshow("test", imagem)
+        imagem = cv2.imread(caminho_da_imagem, 0) # ler já transformando em grayscale, o que permite saltar o proximo passo   
+        # imagem_em_tons_de_cinza = cv2.cvtColor(imagem, cv2.COLOR_BGR2GRAY) # deixar em grayscale
+        imagem_suave = cv2.blur(imagem, (4, 4))
+        T = mahotas.thresholding.otsu(imagem_suave)
+        binnary = imagem_suave.copy()
+        binnary[binnary > T] = 255
+        binnary[binnary < 255] = 0
+        binnary = cv2.bitwise_not(binnary)
+        # image_height, image_width = binnary.shape[:2]
+
+        cv2.namedWindow("test", cv2.WND_PROP_FULLSCREEN)
+        cv2.setWindowProperty("test", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+        # screen_height = cv2.getWindowProperty("test", cv2.width)
+        # print(image_height, image_width, screen_height)
+        # new_width = int(screen_height * image_width / image_height)
+        # bordas = cv2.Canny(binnary, 70, 150)
+
+        # bin2 = cv2.resize(binnary, (300, 300), interpolation=cv2.INTER_AREA)
+        cv2.imshow("test", binnary)
+        # screen_width = cv2.getWindowProperty('test', cv2.WND_PROP_FULLSCREEN_WIDTH)
+        # print(screen_width)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
-            # try:
-            #     texto = cv2.Ocr(cv2.ORB_FEATURE_MATCHER, cv2.ORB_EXTRACTOR).readText(image)
-            #     print(texto)
-            # except Exception as e:
-            #     print(e)
-            #     texto = pytesseract.image_to_string(image, config='--psm 10')
-            #     print(texto)
-            # text = pytesseract.image_to_string(image, config='--psm 10')
-            # _, thresh = cv2.threshold(image, 127, 255, cv2.THRESH_BINARY)
-            # print(text)
-        #     print(gray_image)
-            # if palavra_chave in text:
-            #     print(f"Palavra-chave '{palavra_chave}' encontrada na página {self.__images.index(image) + 1}")
-            # else:
-            #     print("Palavra não encontrada.")
 
     def identificar_caixas(self):
         pass
